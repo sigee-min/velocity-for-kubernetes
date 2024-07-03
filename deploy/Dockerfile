@@ -12,7 +12,7 @@ FROM docker.io/library/openjdk:21-slim
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*-all.jar /app/velocity.jar
-COPY --from=build /app/deploy/default-velocity.toml /app/velocity.toml
+COPY --from=build /app/deploy/velocity.toml /app/velocity.toml
 
 # Set default environment variables
 ENV BIND="0.0.0.0:25577"
