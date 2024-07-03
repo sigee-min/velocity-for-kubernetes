@@ -12,7 +12,7 @@ FROM docker.io/library/openjdk:21-slim
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*-all.jar /app/velocity.jar
-COPY --from=build /app/deploy/default-velocity.toml /app/default-velocity.toml
+COPY --from=build /app/deploy/default-velocity.toml /app/velocity.toml
 
 # Set default environment variables
 ENV BIND="0.0.0.0:25577"
@@ -45,39 +45,40 @@ ENV QUERY_PORT=25577
 ENV QUERY_MAP="Velocity"
 ENV SHOW_PLUGINS=false
 ENV SSE_ENDPOINT="https://localhost:25575"
+ENV JAVA_OPTS="-Xms2G -Xmx2G -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxInlineLevel=15"
 
 # Expose the port
 EXPOSE 25565
 
-# Replace placeholders in default-velocity.toml with environment variable values
-CMD sed -i "s|{{BIND}}|${BIND}|g" /app/default-velocity.toml && \
-    sed -i "s|{{MOTD}}|${MOTD}|g" /app/default-velocity.toml && \
-    sed -i "s|{{SHOW_MAX_PLAYERS}}|${SHOW_MAX_PLAYERS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{ONLINE_MODE}}|${ONLINE_MODE}|g" /app/default-velocity.toml && \
-    sed -i "s|{{FORCE_KEY_AUTHENTICATION}}|${FORCE_KEY_AUTHENTICATION}|g" /app/default-velocity.toml && \
-    sed -i "s|{{PREVENT_CLIENT_PROXY_CONNECTIONS}}|${PREVENT_CLIENT_PROXY_CONNECTIONS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{PLAYER_INFO_FORWARDING_MODE}}|${PLAYER_INFO_FORWARDING_MODE}|g" /app/default-velocity.toml && \
-    sed -i "s|{{FORWARDING_SECRET_FILE}}|${FORWARDING_SECRET_FILE}|g" /app/default-velocity.toml && \
-    sed -i "s|{{ANNOUNCE_FORGE}}|${ANNOUNCE_FORGE}|g" /app/default-velocity.toml && \
-    sed -i "s|{{KICK_EXISTING_PLAYERS}}|${KICK_EXISTING_PLAYERS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{PING_PASSTHROUGH}}|${PING_PASSTHROUGH}|g" /app/default-velocity.toml && \
-    sed -i "s|{{ENABLE_PLAYER_ADDRESS_LOGGING}}|${ENABLE_PLAYER_ADDRESS_LOGGING}|g" /app/default-velocity.toml && \
-    sed -i "s|{{COMPRESSION_THRESHOLD}}|${COMPRESSION_THRESHOLD}|g" /app/default-velocity.toml && \
-    sed -i "s|{{COMPRESSION_LEVEL}}|${COMPRESSION_LEVEL}|g" /app/default-velocity.toml && \
-    sed -i "s|{{LOGIN_RATELIMIT}}|${LOGIN_RATELIMIT}|g" /app/default-velocity.toml && \
-    sed -i "s|{{CONNECTION_TIMEOUT}}|${CONNECTION_TIMEOUT}|g" /app/default-velocity.toml && \
-    sed -i "s|{{READ_TIMEOUT}}|${READ_TIMEOUT}|g" /app/default-velocity.toml && \
-    sed -i "s|{{HAPROXY_PROTOCOL}}|${HAPROXY_PROTOCOL}|g" /app/default-velocity.toml && \
-    sed -i "s|{{TCP_FAST_OPEN}}|${TCP_FAST_OPEN}|g" /app/default-velocity.toml && \
-    sed -i "s|{{BUNGEE_PLUGIN_MESSAGE_CHANNEL}}|${BUNGEE_PLUGIN_MESSAGE_CHANNEL}|g" /app/default-velocity.toml && \
-    sed -i "s|{{SHOW_PING_REQUESTS}}|${SHOW_PING_REQUESTS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{FAILOVER_ON_UNEXPECTED_SERVER_DISCONNECT}}|${FAILOVER_ON_UNEXPECTED_SERVER_DISCONNECT}|g" /app/default-velocity.toml && \
-    sed -i "s|{{ANNOUNCE_PROXY_COMMANDS}}|${ANNOUNCE_PROXY_COMMANDS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{LOG_COMMAND_EXECUTIONS}}|${LOG_COMMAND_EXECUTIONS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{LOG_PLAYER_CONNECTIONS}}|${LOG_PLAYER_CONNECTIONS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{QUERY_ENABLED}}|${QUERY_ENABLED}|g" /app/default-velocity.toml && \
-    sed -i "s|{{QUERY_PORT}}|${QUERY_PORT}|g" /app/default-velocity.toml && \
-    sed -i "s|{{QUERY_MAP}}|${QUERY_MAP}|g" /app/default-velocity.toml && \
-    sed -i "s|{{SHOW_PLUGINS}}|${SHOW_PLUGINS}|g" /app/default-velocity.toml && \
-    sed -i "s|{{SSE_ENDPOINT}}|${SSE_ENDPOINT}|g" /app/default-velocity.toml && \
-    java -jar /app/velocity.jar
+# Replace placeholders in velocity.toml with environment variable values
+CMD sed -i "s|{{BIND}}|${BIND}|g" /app/velocity.toml && \
+    sed -i "s|{{MOTD}}|${MOTD}|g" /app/velocity.toml && \
+    sed -i "s|{{SHOW_MAX_PLAYERS}}|${SHOW_MAX_PLAYERS}|g" /app/velocity.toml && \
+    sed -i "s|{{ONLINE_MODE}}|${ONLINE_MODE}|g" /app/velocity.toml && \
+    sed -i "s|{{FORCE_KEY_AUTHENTICATION}}|${FORCE_KEY_AUTHENTICATION}|g" /app/velocity.toml && \
+    sed -i "s|{{PREVENT_CLIENT_PROXY_CONNECTIONS}}|${PREVENT_CLIENT_PROXY_CONNECTIONS}|g" /app/velocity.toml && \
+    sed -i "s|{{PLAYER_INFO_FORWARDING_MODE}}|${PLAYER_INFO_FORWARDING_MODE}|g" /app/velocity.toml && \
+    sed -i "s|{{FORWARDING_SECRET_FILE}}|${FORWARDING_SECRET_FILE}|g" /app/velocity.toml && \
+    sed -i "s|{{ANNOUNCE_FORGE}}|${ANNOUNCE_FORGE}|g" /app/velocity.toml && \
+    sed -i "s|{{KICK_EXISTING_PLAYERS}}|${KICK_EXISTING_PLAYERS}|g" /app/velocity.toml && \
+    sed -i "s|{{PING_PASSTHROUGH}}|${PING_PASSTHROUGH}|g" /app/velocity.toml && \
+    sed -i "s|{{ENABLE_PLAYER_ADDRESS_LOGGING}}|${ENABLE_PLAYER_ADDRESS_LOGGING}|g" /app/velocity.toml && \
+    sed -i "s|{{COMPRESSION_THRESHOLD}}|${COMPRESSION_THRESHOLD}|g" /app/velocity.toml && \
+    sed -i "s|{{COMPRESSION_LEVEL}}|${COMPRESSION_LEVEL}|g" /app/velocity.toml && \
+    sed -i "s|{{LOGIN_RATELIMIT}}|${LOGIN_RATELIMIT}|g" /app/velocity.toml && \
+    sed -i "s|{{CONNECTION_TIMEOUT}}|${CONNECTION_TIMEOUT}|g" /app/velocity.toml && \
+    sed -i "s|{{READ_TIMEOUT}}|${READ_TIMEOUT}|g" /app/velocity.toml && \
+    sed -i "s|{{HAPROXY_PROTOCOL}}|${HAPROXY_PROTOCOL}|g" /app/velocity.toml && \
+    sed -i "s|{{TCP_FAST_OPEN}}|${TCP_FAST_OPEN}|g" /app/velocity.toml && \
+    sed -i "s|{{BUNGEE_PLUGIN_MESSAGE_CHANNEL}}|${BUNGEE_PLUGIN_MESSAGE_CHANNEL}|g" /app/velocity.toml && \
+    sed -i "s|{{SHOW_PING_REQUESTS}}|${SHOW_PING_REQUESTS}|g" /app/velocity.toml && \
+    sed -i "s|{{FAILOVER_ON_UNEXPECTED_SERVER_DISCONNECT}}|${FAILOVER_ON_UNEXPECTED_SERVER_DISCONNECT}|g" /app/velocity.toml && \
+    sed -i "s|{{ANNOUNCE_PROXY_COMMANDS}}|${ANNOUNCE_PROXY_COMMANDS}|g" /app/velocity.toml && \
+    sed -i "s|{{LOG_COMMAND_EXECUTIONS}}|${LOG_COMMAND_EXECUTIONS}|g" /app/velocity.toml && \
+    sed -i "s|{{LOG_PLAYER_CONNECTIONS}}|${LOG_PLAYER_CONNECTIONS}|g" /app/velocity.toml && \
+    sed -i "s|{{QUERY_ENABLED}}|${QUERY_ENABLED}|g" /app/velocity.toml && \
+    sed -i "s|{{QUERY_PORT}}|${QUERY_PORT}|g" /app/velocity.toml && \
+    sed -i "s|{{QUERY_MAP}}|${QUERY_MAP}|g" /app/velocity.toml && \
+    sed -i "s|{{SHOW_PLUGINS}}|${SHOW_PLUGINS}|g" /app/velocity.toml && \
+    sed -i "s|{{SSE_ENDPOINT}}|${SSE_ENDPOINT}|g" /app/velocity.toml && \
+    java $JAVA_OPTS -jar /app/velocity.jar
