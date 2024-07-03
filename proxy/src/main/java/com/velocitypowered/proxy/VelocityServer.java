@@ -56,6 +56,7 @@ import com.velocitypowered.proxy.protocol.ProtocolUtils;
 import com.velocitypowered.proxy.protocol.util.FaviconSerializer;
 import com.velocitypowered.proxy.protocol.util.GameProfileSerializer;
 import com.velocitypowered.proxy.scheduler.VelocityScheduler;
+import com.velocitypowered.proxy.server.ServerGroup;
 import com.velocitypowered.proxy.server.ServerMap;
 import com.velocitypowered.proxy.util.AddressUtil;
 import com.velocitypowered.proxy.util.ClosestLocaleMatcher;
@@ -147,6 +148,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
   private @MonotonicNonNull VelocityConfiguration configuration;
   private @MonotonicNonNull KeyPair serverKeyPair;
   private final ServerMap servers;
+  private final ServerGroup serverGroup;
   private final VelocityCommandManager commandManager;
   private final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
   private boolean shutdown = false;
@@ -169,6 +171,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     console = new VelocityConsole(this);
     cm = new ConnectionManager(this);
     servers = new ServerMap(this);
+    serverGroup = new ServerGroup(servers, this.configuration.getSseEndpoint());
     serverListPingHandler = new ServerListPingHandler(this);
     this.options = options;
   }

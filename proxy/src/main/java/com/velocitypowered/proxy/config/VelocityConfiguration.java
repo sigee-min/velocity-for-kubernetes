@@ -91,6 +91,8 @@ public class VelocityConfiguration implements ProxyConfig {
   @Expose
   private boolean forceKeyAuthentication = true; // Added in 1.19
 
+  private String sseEndpoint = "";
+
   private VelocityConfiguration(Servers servers, ForcedHosts forcedHosts, Advanced advanced,
       Query query, Metrics metrics) {
     this.servers = servers;
@@ -105,7 +107,7 @@ public class VelocityConfiguration implements ProxyConfig {
       PlayerInfoForwarding playerInfoForwardingMode, byte[] forwardingSecret,
       boolean onlineModeKickExistingPlayers, PingPassthroughMode pingPassthrough,
       boolean enablePlayerAddressLogging, Servers servers, ForcedHosts forcedHosts,
-      Advanced advanced, Query query, Metrics metrics, boolean forceKeyAuthentication) {
+      Advanced advanced, Query query, Metrics metrics, boolean forceKeyAuthentication, String sseEndpoint) {
     this.bind = bind;
     this.motd = motd;
     this.showMaxPlayers = showMaxPlayers;
@@ -123,6 +125,7 @@ public class VelocityConfiguration implements ProxyConfig {
     this.query = query;
     this.metrics = metrics;
     this.forceKeyAuthentication = forceKeyAuthentication;
+    this.sseEndpoint = sseEndpoint;
   }
 
   /**
@@ -402,6 +405,10 @@ public class VelocityConfiguration implements ProxyConfig {
     return forceKeyAuthentication;
   }
 
+  public String getSseEndpoint() {
+    return sseEndpoint;
+  }
+
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
@@ -419,6 +426,7 @@ public class VelocityConfiguration implements ProxyConfig {
         .add("favicon", favicon)
         .add("enablePlayerAddressLogging", enablePlayerAddressLogging)
         .add("forceKeyAuthentication", forceKeyAuthentication)
+        .add("sseEndpoint", sseEndpoint)
         .toString();
   }
 
@@ -507,6 +515,7 @@ public class VelocityConfiguration implements ProxyConfig {
       final boolean kickExisting = config.getOrElse("kick-existing-players", false);
       final boolean enablePlayerAddressLogging = config.getOrElse(
               "enable-player-address-logging", true);
+      final String sseEndpoint = config.getOrElse("sse-endpoint", "http://localhost:25577");
 
       // Throw an exception if the forwarding-secret file is empty and the proxy is using a
       // forwarding mode that requires it.
@@ -533,7 +542,8 @@ public class VelocityConfiguration implements ProxyConfig {
               new Advanced(advancedConfig),
               new Query(queryConfig),
               new Metrics(metricsConfig),
-              forceKeyAuthentication
+              forceKeyAuthentication,
+              sseEndpoint
       );
     }
   }

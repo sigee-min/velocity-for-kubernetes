@@ -110,6 +110,7 @@ dependencies {
     implementation(libs.netty.transport.native.kqueue)
     implementation(variantOf(libs.netty.transport.native.kqueue) { classifier("osx-x86_64") })
     implementation(variantOf(libs.netty.transport.native.kqueue) { classifier("osx-aarch_64") })
+    implementation("com.squareup.okhttp3:okhttp:3.2.0")
 
     implementation(libs.jopt)
     implementation(libs.terminalconsoleappender)
@@ -125,6 +126,7 @@ dependencies {
     implementation(libs.lmbda)
     implementation(libs.asm)
     implementation(libs.bundles.flare)
+    implementation("redis.clients:jedis:2.8.0")
     compileOnly(libs.spotbugs.annotations)
     compileOnly(libs.auto.service.annotations)
     testImplementation(libs.mockito)
