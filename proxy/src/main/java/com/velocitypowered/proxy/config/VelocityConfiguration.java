@@ -477,7 +477,7 @@ public class VelocityConfiguration implements ProxyConfig {
               "VELOCITY_FORWARDING_SECRET", "");
       if (forwardingSecretString.isEmpty()) {
         final String forwardSecretFile = config.get("forwarding-secret-file");
-        final Path secretPath = forwardSecretFile == null
+        final Path secretPath = (forwardSecretFile == null || !Files.exists(Path.of(forwardSecretFile)))
                 ? defaultForwardingSecretPath
                 : Path.of(forwardSecretFile);
         if (Files.exists(secretPath)) {
