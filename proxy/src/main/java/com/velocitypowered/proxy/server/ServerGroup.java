@@ -27,15 +27,18 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import com.velocitypowered.proxy.VelocityServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,6 +50,8 @@ public class ServerGroup {
 
   private final ServerMap serverMap;
   private final Map<String, Set<RegisteredServer>> groupMap;
+  private final HttpClient client = HttpClient.newHttpClient();
+  private final Duration retryInterval = Duration.ofSeconds(5);
 
   /**
    * Initializes the ServerGroup with the given server map and SSE endpoint.
@@ -56,6 +61,7 @@ public class ServerGroup {
   public ServerGroup(ServerMap serverMap) {
     this.serverMap = serverMap;
     this.groupMap = new ConcurrentHashMap<>();
+
   }
 
   /**
@@ -65,31 +71,58 @@ public class ServerGroup {
    */
   public void startSseConnection(String sseUrl) {
     logger.info("Starting SSE connection to URL: {}", sseUrl);
-    HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sseUrl)).build();
 
-    client.sendAsync(request, HttpResponse.BodyHandlers.ofLines()).thenAccept(response -> {
-      logger.info("Connected to SSE endpoint. Processing events...");
-      try (var lines = response.body()) {
-        StringBuilder eventBuilder = new StringBuilder();
-        lines.forEach(line -> {
-          if (line.startsWith("event:")) {
-            eventBuilder.setLength(0);
-            eventBuilder.append(line);
-            logger.debug("Received event: {}", line);
-          } else if (line.startsWith("data:")) {
-            eventBuilder.append("\n").append(line);
-            logger.debug("Received data: {}", line);
-            handleSseEvent(eventBuilder.toString());
-          }
-        });
-      } catch (Exception e) {
-        logger.error("Error processing SSE events: ", e);
-      }
-    }).exceptionally(e -> {
-      logger.error("Failed to connect to SSE endpoint: ", e);
-      return null;
-    });
+    final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sseUrl)).build();
+    CompletableFuture<Void> connectionFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
+      .thenAccept(response -> {
+        logger.info("Connected to SSE endpoint. Processing events...");
+        processEvents(response, sseUrl);
+      }).exceptionally(ex -> {
+        logger.error("Failed to connect to SSE endpoint: ", ex);
+        scheduleReconnect(sseUrl);
+        return null;
+      });
+  }
+
+  /**
+   * Processes the events received in the SSE response and handles them accordingly.
+   *
+   * @param response the SSE response containing the events
+   * @param sseUrl the SSE endpoint URL
+   */
+  private void processEvents(HttpResponse<Stream<String>> response, String sseUrl) {
+    try (var lines = response.body()) {
+      StringBuilder eventBuilder = new StringBuilder();
+      lines.forEach(line -> {
+        if (line.startsWith("event:")) {
+          eventBuilder.setLength(0);
+          eventBuilder.append(line);
+          logger.debug("Received event: {}", line);
+        } else if (line.startsWith("data:")) {
+          eventBuilder.append("\n").append(line);
+          logger.debug("Received data: {}", line);
+          handleSseEvent(eventBuilder.toString());
+        }
+      });
+    } catch (Exception e) {
+      logger.error("Error processing SSE events: ", e);
+      startSseConnection(sseUrl); // Try reconnecting if stream processing fails
+    }
+  }
+
+  /**
+   * Schedules a reconnect to the given SSE URL after a specified interval.
+   *
+   * @param sseUrl the SSE endpoint URL to reconnect to
+   */
+  private void scheduleReconnect(String sseUrl) {
+    logger.info("Scheduling reconnect in {} seconds", retryInterval.getSeconds());
+    try {
+      TimeUnit.SECONDS.sleep(retryInterval.getSeconds());
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+    startSseConnection(sseUrl);
   }
 
   /**
