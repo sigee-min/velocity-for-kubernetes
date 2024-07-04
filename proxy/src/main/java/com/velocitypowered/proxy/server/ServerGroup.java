@@ -39,14 +39,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages groups of servers and handles updates from an SSE endpoint.
  */
 public class ServerGroup {
-  private static final Logger logger = LogManager.getLogger(ServerGroup.class);
+  private static final Logger logger = LoggerFactory.getLogger(ServerGroup.class);
 
   private final ServerMap serverMap;
   private final Map<String, Set<RegisteredServer>> groupMap;
@@ -74,14 +74,14 @@ public class ServerGroup {
 
     final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sseUrl)).build();
     CompletableFuture<Void> connectionFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
-      .thenAccept(response -> {
-        logger.info("Connected to SSE endpoint. Processing events...");
-        processEvents(response, sseUrl);
-      }).exceptionally(ex -> {
-        logger.error("Failed to connect to SSE endpoint: ", ex);
-        scheduleReconnect(sseUrl);
-        return null;
-      });
+        .thenAccept(response -> {
+          logger.info("Connected to SSE endpoint. Processing events...");
+          processEvents(response, sseUrl);
+        }).exceptionally(ex -> {
+          logger.error("Failed to connect to SSE endpoint: ", ex);
+          scheduleReconnect(sseUrl);
+          return null;
+        });
   }
 
   /**
