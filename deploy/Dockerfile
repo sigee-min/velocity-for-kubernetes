@@ -49,6 +49,7 @@ ENV JAVA_OPTS="-Xms2G -Xmx2G -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExp
 
 # Expose the port
 EXPOSE 25565
+EXPOSE 25577
 
 # Replace placeholders in velocity.toml with environment variable values
 CMD sed -i "s|{{BIND}}|${BIND}|g" /app/velocity.toml && \
