@@ -171,7 +171,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     console = new VelocityConsole(this);
     cm = new ConnectionManager(this);
     servers = new ServerMap(this);
-    serverGroup = new ServerGroup(servers, this.configuration.getSseEndpoint());
+    serverGroup = new ServerGroup(servers);
     serverListPingHandler = new ServerListPingHandler(this);
     this.options = options;
   }
@@ -269,6 +269,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     }
 
     Metrics.VelocityMetrics.startMetrics(this, configuration.getMetrics());
+    this.serverGroup.startSseConnection(this.configuration.getSseEndpoint());
   }
 
   private void registerTranslations() {

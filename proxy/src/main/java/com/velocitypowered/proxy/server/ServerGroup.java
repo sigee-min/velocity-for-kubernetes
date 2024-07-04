@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import com.velocitypowered.proxy.VelocityServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,20 +47,15 @@ public class ServerGroup {
 
   private final ServerMap serverMap;
   private final Map<String, Set<RegisteredServer>> groupMap;
-  private final String sseEndpoint;
 
   /**
    * Initializes the ServerGroup with the given server map and SSE endpoint.
    *
    * @param serverMap   the server map
-   * @param sseEndpoint the SSE endpoint URL
    */
-  public ServerGroup(ServerMap serverMap, String sseEndpoint) {
+  public ServerGroup(ServerMap serverMap) {
     this.serverMap = serverMap;
     this.groupMap = new ConcurrentHashMap<>();
-    this.sseEndpoint = sseEndpoint;
-    logger.info("Initializing ServerGroup with SSE endpoint: {}", sseEndpoint);
-    startSseConnection(sseEndpoint);
   }
 
   /**
