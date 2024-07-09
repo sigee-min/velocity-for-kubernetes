@@ -22,7 +22,7 @@ ENV ONLINE_MODE=true
 ENV FORCE_KEY_AUTHENTICATION=true
 ENV PREVENT_CLIENT_PROXY_CONNECTIONS=false
 ENV PLAYER_INFO_FORWARDING_MODE="MODERN"
-ENV FORWARDING_SECRET_FILE="forwarding.secret"
+ENV VELOCITY_FORWARDING_SECRET="abcdabcdabcd"
 ENV ANNOUNCE_FORGE=false
 ENV KICK_EXISTING_PLAYERS=false
 ENV PING_PASSTHROUGH="DISABLED"
@@ -59,7 +59,6 @@ CMD sed -i "s|{{BIND}}|${BIND}|g" /app/velocity.toml && \
     sed -i "s|{{FORCE_KEY_AUTHENTICATION}}|${FORCE_KEY_AUTHENTICATION}|g" /app/velocity.toml && \
     sed -i "s|{{PREVENT_CLIENT_PROXY_CONNECTIONS}}|${PREVENT_CLIENT_PROXY_CONNECTIONS}|g" /app/velocity.toml && \
     sed -i "s|{{PLAYER_INFO_FORWARDING_MODE}}|${PLAYER_INFO_FORWARDING_MODE}|g" /app/velocity.toml && \
-    sed -i "s|{{FORWARDING_SECRET_FILE}}|${FORWARDING_SECRET_FILE}|g" /app/velocity.toml && \
     sed -i "s|{{ANNOUNCE_FORGE}}|${ANNOUNCE_FORGE}|g" /app/velocity.toml && \
     sed -i "s|{{KICK_EXISTING_PLAYERS}}|${KICK_EXISTING_PLAYERS}|g" /app/velocity.toml && \
     sed -i "s|{{PING_PASSTHROUGH}}|${PING_PASSTHROUGH}|g" /app/velocity.toml && \
