@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Velocity Contributors
+ * Copyright (C) 2018-2023 Velocity Contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,9 +35,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,12 +54,11 @@ public class ServerGroup {
   /**
    * Initializes the ServerGroup with the given server map and SSE endpoint.
    *
-   * @param serverMap   the server map
+   * @param serverMap the server map
    */
   public ServerGroup(ServerMap serverMap) {
     this.serverMap = serverMap;
     this.groupMap = new ConcurrentHashMap<>();
-
   }
 
   /**
@@ -70,42 +69,19 @@ public class ServerGroup {
   public void startSseConnection(String sseUrl) {
     logger.info("Starting SSE connection to URL: {}", sseUrl);
 
-    final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(sseUrl)).build();
-    CompletableFuture<Void> connectionFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofLines())
-        .thenAccept(response -> {
-          logger.info("Connected to SSE endpoint. Processing events...");
-          processEvents(response, sseUrl);
-        }).exceptionally(ex -> {
-          logger.error("Failed to connect to SSE endpoint: ", ex);
-          scheduleReconnect(sseUrl);
-          return null;
-        });
-  }
+    final HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(sseUrl))
+            .header("Accept", "text/event-stream")
+            .build();
 
-  /**
-   * Processes the events received in the SSE response and handles them accordingly.
-   *
-   * @param response the SSE response containing the events
-   * @param sseUrl the SSE endpoint URL
-   */
-  private void processEvents(HttpResponse<Stream<String>> response, String sseUrl) {
-    try (var lines = response.body()) {
-      StringBuilder eventBuilder = new StringBuilder();
-      lines.forEach(line -> {
-        if (line.startsWith("event:")) {
-          eventBuilder.setLength(0);
-          eventBuilder.append(line);
-          logger.debug("Received event: {}", line);
-        } else if (line.startsWith("data:")) {
-          eventBuilder.append("\n").append(line);
-          logger.debug("Received data: {}", line);
-          handleSseEvent(eventBuilder.toString());
-        }
-      });
-    } catch (Exception e) {
-      logger.error("Error processing SSE events: ", e);
-      startSseConnection(sseUrl); // Try reconnecting if stream processing fails
-    }
+    CompletableFuture<HttpResponse<Void>> connectionFuture = client.sendAsync(
+            request, HttpResponse.BodyHandlers.fromLineSubscriber(new LineSubscriber(sseUrl))
+            )
+            .exceptionally(ex -> {
+              logger.error("Failed to connect to SSE endpoint: ", ex);
+              scheduleReconnect(sseUrl);
+              return null;
+            });
   }
 
   /**
@@ -191,6 +167,49 @@ public class ServerGroup {
       updateGroup(groupName, serverIps);
     } else {
       logger.warn("Received unhandled event type: {}", event);
+    }
+  }
+
+  private class LineSubscriber implements Flow.Subscriber<String> {
+    private final String sseUrl;
+    private Flow.Subscription subscription;
+    private final StringBuilder eventBuilder = new StringBuilder();
+
+    public LineSubscriber(String sseUrl) {
+      this.sseUrl = sseUrl;
+    }
+
+    @Override
+    public void onSubscribe(Flow.Subscription subscription) {
+      this.subscription = subscription;
+      subscription.request(1);
+    }
+
+    @Override
+    public void onNext(String line) {
+      if (line.startsWith("event:")) {
+        eventBuilder.setLength(0);
+        eventBuilder.append(line);
+      } else if (line.startsWith("data:")) {
+        eventBuilder.append("\n").append(line);
+        if (line.trim().isEmpty() && !eventBuilder.isEmpty()) {
+          handleSseEvent(eventBuilder.toString());
+          eventBuilder.setLength(0);
+        }
+      }
+      subscription.request(1);
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+      logger.error("Error in SSE stream: ", throwable);
+      scheduleReconnect(sseUrl);
+    }
+
+    @Override
+    public void onComplete() {
+      logger.info("SSE stream completed. Reconnecting...");
+      scheduleReconnect(sseUrl);
     }
   }
 }
