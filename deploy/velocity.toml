@@ -150,5 +150,3 @@ map = "{{QUERY_MAP}}"
 
 # Whether plugins should be shown in query response by default or not
 show-plugins = {{SHOW_PLUGINS}}
-
-sse-endpoint = {{SSE_ENDPOINT}}

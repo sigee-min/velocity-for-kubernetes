@@ -515,7 +515,9 @@ public class VelocityConfiguration implements ProxyConfig {
       final boolean kickExisting = config.getOrElse("kick-existing-players", false);
       final boolean enablePlayerAddressLogging = config.getOrElse(
               "enable-player-address-logging", true);
-      final String sseEndpoint = config.getOrElse("sse-endpoint", "http://localhost:25577");
+
+      String tmpSseEndpoint = System.getenv("SSE_ENDPOINT");
+      final String sseEndpoint = tmpSseEndpoint == null || tmpSseEndpoint.isEmpty() ? "http://localhost:25565" : tmpSseEndpoint;
 
       // Throw an exception if the forwarding-secret file is empty and the proxy is using a
       // forwarding mode that requires it.

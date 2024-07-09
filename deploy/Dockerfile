@@ -44,12 +44,11 @@ ENV QUERY_ENABLED=false
 ENV QUERY_PORT=25577
 ENV QUERY_MAP="Velocity"
 ENV SHOW_PLUGINS=false
-ENV SSE_ENDPOINT="https://localhost:25575"
+ENV SSE_ENDPOINT="https://localhost:25565"
 ENV JAVA_OPTS="-Xms2G -Xmx2G -XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOptions -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxInlineLevel=15"
 
 # Expose the port
 EXPOSE 25565
-EXPOSE 25577
 
 # Replace placeholders in velocity.toml with environment variable values
 CMD sed -i "s|{{BIND}}|${BIND}|g" /app/velocity.toml && \
@@ -80,5 +79,4 @@ CMD sed -i "s|{{BIND}}|${BIND}|g" /app/velocity.toml && \
     sed -i "s|{{QUERY_PORT}}|${QUERY_PORT}|g" /app/velocity.toml && \
     sed -i "s|{{QUERY_MAP}}|${QUERY_MAP}|g" /app/velocity.toml && \
     sed -i "s|{{SHOW_PLUGINS}}|${SHOW_PLUGINS}|g" /app/velocity.toml && \
-    sed -i "s|{{SSE_ENDPOINT}}|${SSE_ENDPOINT}|g" /app/velocity.toml && \
     java $JAVA_OPTS -jar /app/velocity.jar
