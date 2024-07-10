@@ -22,21 +22,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
+import com.velocitypowered.proxy.util.SseClient;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Flow;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,8 +41,7 @@ public class ServerGroup {
   private static final Logger logger = LogManager.getLogger(ServerGroup.class);
   private final ServerMap serverMap;
   private final Map<String, Set<RegisteredServer>> groupMap;
-  private final HttpClient client = HttpClient.newHttpClient();
-  private final Duration retryInterval = Duration.ofSeconds(5);
+  private SseClient sseClient;
 
   /**
    * Initializes the ServerGroup with the given server map and SSE endpoint.
@@ -68,35 +60,18 @@ public class ServerGroup {
    */
   public void startSseConnection(String sseUrl) {
     logger.info("Starting SSE connection to URL: {}", sseUrl);
-
-    final HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(sseUrl))
-            .header("Accept", "text/event-stream")
-            .build();
-
-    CompletableFuture<HttpResponse<Void>> connectionFuture = client.sendAsync(
-            request, HttpResponse.BodyHandlers.fromLineSubscriber(new LineSubscriber(sseUrl))
-            )
-            .exceptionally(ex -> {
-              logger.error("Failed to connect to SSE endpoint: ", ex);
-              scheduleReconnect(sseUrl);
-              return null;
-            });
+    sseClient = new SseClient(sseUrl, Collections.emptyMap(), this::handleSseEvent);
+    sseClient.start();
   }
 
   /**
-   * Schedules a reconnect to the given SSE URL after a specified interval.
-   *
-   * @param sseUrl the SSE endpoint URL to reconnect to
+   * Stops the SSE connection.
    */
-  private void scheduleReconnect(String sseUrl) {
-    logger.info("Scheduling reconnect in {} seconds", retryInterval.getSeconds());
-    try {
-      TimeUnit.SECONDS.sleep(retryInterval.getSeconds());
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
+  public void stopSseConnection() {
+    logger.info("Stopping SSE connection");
+    if (sseClient != null) {
+      sseClient.stop();
     }
-    startSseConnection(sseUrl);
   }
 
   /**
@@ -167,49 +142,6 @@ public class ServerGroup {
       updateGroup(groupName, serverIps);
     } else {
       logger.warn("Received unhandled event type: {}", event);
-    }
-  }
-
-  private class LineSubscriber implements Flow.Subscriber<String> {
-    private final String sseUrl;
-    private Flow.Subscription subscription;
-    private final StringBuilder eventBuilder = new StringBuilder();
-
-    public LineSubscriber(String sseUrl) {
-      this.sseUrl = sseUrl;
-    }
-
-    @Override
-    public void onSubscribe(Flow.Subscription subscription) {
-      this.subscription = subscription;
-      subscription.request(1);
-    }
-
-    @Override
-    public void onNext(String line) {
-      if (line.startsWith("event:")) {
-        eventBuilder.setLength(0);
-        eventBuilder.append(line);
-      } else if (line.startsWith("data:")) {
-        eventBuilder.append("\n").append(line);
-        if (line.trim().isEmpty() && !eventBuilder.isEmpty()) {
-          handleSseEvent(eventBuilder.toString());
-          eventBuilder.setLength(0);
-        }
-      }
-      subscription.request(1);
-    }
-
-    @Override
-    public void onError(Throwable throwable) {
-      logger.error("Error in SSE stream: ", throwable);
-      scheduleReconnect(sseUrl);
-    }
-
-    @Override
-    public void onComplete() {
-      logger.info("SSE stream completed. Reconnecting...");
-      scheduleReconnect(sseUrl);
     }
   }
 }
