@@ -18,12 +18,13 @@
 package com.velocitypowered.proxy.server;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
 import com.velocitypowered.proxy.util.SseClient;
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -132,16 +133,13 @@ public class ServerGroup {
    */
   public void handleSseEvent(String event) {
     logger.info("Handling SSE event: {}", event);
-    if (event.startsWith("event:minecraftservergroup")) {
-      int dataIndex = event.indexOf("data:") + 5;
-      String dataLine = event.substring(dataIndex).trim();
-      JsonObject jsonObject = JsonParser.parseString(dataLine).getAsJsonObject();
-      String groupName = jsonObject.get("name").getAsString();
-      Set<String> serverIps = new Gson().fromJson(jsonObject.get("serverIps"), Set.class);
-      logger.info("Parsed event data - groupName: '{}', serverIps: {}", groupName, serverIps);
-      updateGroup(groupName, serverIps);
-    } else {
-      logger.warn("Received unhandled event type: {}", event);
-    }
+
+    Type type = new TypeToken<Map<String, Object>>(){}.getType();
+    Map<String, Object> data = new Gson().fromJson(event, type);
+
+    String groupName = (String) data.get("name");
+    Set<String> serverIps = new HashSet<>((ArrayList<String>) data.get("serverIps"));
+    logger.info("Parsed event data - groupName: '{}', serverIps: {}", groupName, serverIps);
+    updateGroup(groupName, serverIps);
   }
 }
