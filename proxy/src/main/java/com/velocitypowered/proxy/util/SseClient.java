@@ -127,19 +127,17 @@ public class SseClient {
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
       String line;
       StringBuilder eventBuilder = new StringBuilder();
-
       while ((line = reader.readLine()) != null && shouldRun.get()) {
         logger.info("Read line from SSE response: {}", line);
         if (line.startsWith("data:")) {
           eventBuilder.append(line.substring(5).trim()).append("\n");
         }
-
-        if (line.isEmpty() && eventBuilder.length() > 0) {
-          String event = eventBuilder.toString().trim();
-          logger.debug("Complete event received: {}", event);
-          eventHandler.handle(event);
-          eventBuilder.setLength(0);
-        }
+      }
+      if(!eventBuilder.isEmpty() && shouldRun.get()) {
+        String event = eventBuilder.toString().trim();
+        logger.debug("Complete event received: {}", event);
+        eventHandler.handle(event);
+        eventBuilder.setLength(0);
       }
     } catch (IOException e) {
       logger.error("Error reading SSE response: ", e);
