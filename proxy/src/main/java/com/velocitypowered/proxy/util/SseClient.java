@@ -57,7 +57,7 @@ public class SseClient {
     this.headerParams = headerParams;
     this.eventHandler = eventHandler;
     this.client = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_2)
+            .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(30))
             .build();
   }
