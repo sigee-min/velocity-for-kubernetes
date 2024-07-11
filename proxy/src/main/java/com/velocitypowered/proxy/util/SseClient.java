@@ -55,11 +55,13 @@ public class SseClient {
   public SseClient(String url, Map<String, String> headerParams, EventHandler eventHandler) {
     this.url = url;
     this.headerParams = headerParams;
+
     this.eventHandler = eventHandler;
     this.client = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(30))
             .build();
+    logger.debug("SseClient initialized with URL: {} and headers: {}", url, headerParams);
   }
 
   /**
@@ -79,24 +81,29 @@ public class SseClient {
    */
   private void connect() {
     if (!shouldRun.get()) {
+      logger.info("Connection aborted as shouldRun is set to false.");
       return;
     }
 
+    logger.info("Preparing SSE connection request to URL: {}", url);
+
     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create(url))
-            .header("Content-Type", "text/event-stream")
-            .header("Cache-Control", "no-cache")
-            .header("Connection", "keep-alive")
             .timeout(Duration.ofSeconds(60))
             .GET();
 
-    headerParams.forEach(requestBuilder::header);
+    headerParams.forEach((key, value) -> {
+      requestBuilder.header(key, value);
+      logger.debug("Added header to request: {}: {}", key, value);
+    });
 
     HttpRequest request = requestBuilder.build();
 
     client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
             .thenAccept(response -> {
+              logger.info("Received response with status code: {}", response.statusCode());
               if (response.statusCode() == 200) {
+                logger.debug("Connection to SSE endpoint successful, processing response.");
                 handleResponse(response.body());
               } else {
                 logger.error("Failed to connect to SSE endpoint with status code: {}", response.statusCode());
@@ -116,17 +123,21 @@ public class SseClient {
    * @param inputStream the input stream to read the response from
    */
   private void handleResponse(InputStream inputStream) {
+    logger.debug("Handling SSE response.");
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
       String line;
       StringBuilder eventBuilder = new StringBuilder();
 
       while ((line = reader.readLine()) != null && shouldRun.get()) {
+        logger.info("Read line from SSE response: {}", line);
         if (line.startsWith("data:")) {
           eventBuilder.append(line.substring(5).trim()).append("\n");
         }
 
-        if (line.isEmpty() && !eventBuilder.isEmpty()) {
-          eventHandler.handle(eventBuilder.toString().trim());
+        if (line.isEmpty() && eventBuilder.length() > 0) {
+          String event = eventBuilder.toString().trim();
+          logger.debug("Complete event received: {}", event);
+          eventHandler.handle(event);
           eventBuilder.setLength(0);
         }
       }
@@ -135,7 +146,6 @@ public class SseClient {
       scheduleReconnect();
     }
   }
-
 
   /**
    * Schedules a reconnect task to be executed by the reconnect scheduler.
@@ -146,10 +156,7 @@ public class SseClient {
    * @see #DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS
    */
   private void scheduleReconnect() {
-    shouldRun.set(false);
-    if (!shouldRun.get()) {
-      return;
-    }
+    logger.info("Scheduling reconnect in {} milliseconds.", DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS);
     reconnectScheduler.schedule(this::connect, DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS, TimeUnit.MILLISECONDS);
   }
 
@@ -158,6 +165,7 @@ public class SseClient {
    */
   public void stop() {
     shouldRun.set(false);
+    logger.info("Stopping SSE connection and shutting down reconnect scheduler.");
     reconnectScheduler.shutdownNow();
   }
 }

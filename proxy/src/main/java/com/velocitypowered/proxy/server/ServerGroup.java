@@ -84,10 +84,8 @@ public class ServerGroup {
     logger.info("Updating group '{}' with servers: {}", groupName, serverIps);
     Set<RegisteredServer> currentServers = groupMap.getOrDefault(groupName, new HashSet<>());
 
-    // HashSet of new servers
     Set<String> newServers = serverIps.stream().map(ip -> String.format("%s-%d", groupName, ip.hashCode())).collect(Collectors.toSet());
 
-    // Add new servers
     for (String ip : serverIps) {
       String serverName = String.format("%s-%d", groupName, ip.hashCode());
       if (currentServers.stream().noneMatch(server -> server.getServerInfo().getName().equals(serverName))) {
@@ -98,7 +96,6 @@ public class ServerGroup {
       }
     }
 
-    // Remove old servers
     Iterator<RegisteredServer> iterator = currentServers.iterator();
     while (iterator.hasNext()) {
       RegisteredServer server = iterator.next();
