@@ -27,6 +27,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +41,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class SseClient {
   private static final Logger logger = LogManager.getLogger(SseClient.class);
-  private static final long DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS = 60L * 1000L;
+  private static final long DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS = 5L * 1000L;
   private final String url;
   private final Map<String, String> headerParams;
   private final EventHandler eventHandler;
@@ -55,7 +56,10 @@ public class SseClient {
     this.url = url;
     this.headerParams = headerParams;
     this.eventHandler = eventHandler;
-    this.client = HttpClient.newHttpClient();
+    this.client = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_2)
+            .connectTimeout(Duration.ofSeconds(30))
+            .build();
   }
 
   /**
@@ -80,7 +84,10 @@ public class SseClient {
 
     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create(url))
-            .header("Accept", "text/event-stream")
+            .header("Content-Type", "text/event-stream")
+            .header("Cache-Control", "no-cache")
+            .header("Connection", "keep-alive")
+            .timeout(Duration.ofSeconds(60))
             .GET();
 
     headerParams.forEach(requestBuilder::header);
@@ -139,6 +146,7 @@ public class SseClient {
    * @see #DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS
    */
   private void scheduleReconnect() {
+    shouldRun.set(false);
     if (!shouldRun.get()) {
       return;
     }

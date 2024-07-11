@@ -60,7 +60,6 @@ public class ServerGroup {
    * @param sseUrl the SSE endpoint URL
    */
   public void startSseConnection(String sseUrl) {
-    logger.info("Starting SSE connection to URL: {}", sseUrl);
     sseClient = new SseClient(sseUrl, Collections.emptyMap(), this::handleSseEvent);
     sseClient.start();
   }
