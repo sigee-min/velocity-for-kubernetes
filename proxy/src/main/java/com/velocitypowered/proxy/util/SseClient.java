@@ -89,7 +89,7 @@ public class SseClient {
 
     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create(url))
-            .timeout(Duration.ofSeconds(60))
+            .timeout(Duration.ofSeconds(10))
             .GET();
 
     headerParams.forEach((key, value) -> {
@@ -114,7 +114,15 @@ public class SseClient {
               logger.error("Exception while connecting to SSE endpoint: ", ex);
               scheduleReconnect();
               return null;
-            });
+            })
+            .whenComplete(((unused, throwable) -> {
+              if (throwable != null) {
+                logger.error("SSE connection completed with an exception: ", throwable);
+              } else {
+                logger.info("SSE connection completed successfully.");
+              }
+              scheduleReconnect();
+            }));
   }
 
   /**
@@ -128,16 +136,16 @@ public class SseClient {
       String line;
       StringBuilder eventBuilder = new StringBuilder();
       while ((line = reader.readLine()) != null && shouldRun.get()) {
-        logger.info("Read line from SSE response: {}", line);
         if (line.startsWith("data:")) {
           eventBuilder.append(line.substring(5).trim()).append("\n");
         }
-      }
-      if(!eventBuilder.isEmpty() && shouldRun.get()) {
-        String event = eventBuilder.toString().trim();
-        logger.debug("Complete event received: {}", event);
-        eventHandler.handle(event);
-        eventBuilder.setLength(0);
+        if (line.isEmpty() && !eventBuilder.isEmpty()) {
+          String event = eventBuilder.toString().trim();
+          logger.debug("Complete event received: {}", event);
+          logger.info("Read line from SSE response: {}", event);
+          eventHandler.handle(event);
+          eventBuilder.setLength(0);
+        }
       }
     } catch (IOException e) {
       logger.error("Error reading SSE response: ", e);
@@ -154,6 +162,10 @@ public class SseClient {
    * @see #DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS
    */
   private void scheduleReconnect() {
+    if (!shouldRun.get()) {
+      logger.info("Connection aborted as shouldRun is set to false.");
+      return;
+    }
     logger.info("Scheduling reconnect in {} milliseconds.", DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS);
     reconnectScheduler.schedule(this::connect, DEFAULT_RECONNECT_SAMPLING_TIME_MILLIS, TimeUnit.MILLISECONDS);
   }

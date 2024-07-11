@@ -17,20 +17,12 @@
 
 package com.velocitypowered.proxy.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import com.sun.net.httpserver.HttpServer;
 import com.velocitypowered.proxy.util.event.EventHandler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
@@ -105,7 +97,8 @@ public class SseClientTest {
   private void sleepQuitely(long millis) {
     try {
       Thread.sleep(millis);
-    } catch (InterruptedException ignored) {
+    } catch (InterruptedException err) {
+      System.err.println(err.getMessage());
     }
   }
 }
