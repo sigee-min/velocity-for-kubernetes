@@ -27,6 +27,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
+import com.velocitypowered.proxy.VelocityServer;
+import com.velocitypowered.proxy.config.VelocityConfiguration;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -44,6 +46,8 @@ class ServerGroupTest {
   void testUpdateGroupWhenAllNewServers() {
 
     // Mocking necessary classes
+    VelocityServer velocityServer = mock(VelocityServer.class);
+    VelocityConfiguration velocityConfiguration = mock(VelocityConfiguration.class);
     ServerMap serverMap = mock(ServerMap.class);
     RegisteredServer registeredServer = mock(RegisteredServer.class);
     ServerInfo serverInfo = mock(ServerInfo.class);
@@ -52,7 +56,9 @@ class ServerGroupTest {
     when(serverMap.register(any(ServerInfo.class))).thenReturn(registeredServer);
     when(registeredServer.getServerInfo()).thenReturn(serverInfo);
     when(serverInfo.getName()).thenReturn("minecraft-server");
-    ServerGroup serverGroup = new ServerGroup(serverMap);
+    when(velocityServer.getConfiguration()).thenReturn(velocityConfiguration);
+    when(velocityServer.getConfiguration().getAttemptConnectionOrder()).thenReturn(new ArrayList<>());
+    ServerGroup serverGroup = new ServerGroup(velocityServer, serverMap);
 
     // Parse test data
     String jsonData = "{\"name\":\"minecraft-server\",\"serverIps\":[\"10.244.0.7\",\"10.244.0.21\"]}";
@@ -64,7 +70,7 @@ class ServerGroupTest {
     Set<String> serverIps = new HashSet<>((ArrayList<String>) data.get("serverIps"));
 
     // Perform the operation to update the group
-    serverGroup.updateGroup(groupName, serverIps);
+    serverGroup.updateGroup(groupName, serverIps, true);
 
     // Verifying the interactions
     verify(serverMap, times(2)).register(any(ServerInfo.class));

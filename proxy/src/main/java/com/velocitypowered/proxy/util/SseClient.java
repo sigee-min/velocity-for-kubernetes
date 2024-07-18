@@ -89,7 +89,7 @@ public class SseClient {
 
     HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
             .uri(URI.create(url))
-            .timeout(Duration.ofSeconds(10))
+            .timeout(Duration.ofSeconds(2))
             .GET();
 
     headerParams.forEach((key, value) -> {

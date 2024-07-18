@@ -171,7 +171,7 @@ public class VelocityServer implements ProxyServer, ForwardingAudience {
     console = new VelocityConsole(this);
     cm = new ConnectionManager(this);
     servers = new ServerMap(this);
-    serverGroup = new ServerGroup(servers);
+    serverGroup = new ServerGroup(this, servers);
     serverListPingHandler = new ServerListPingHandler(this);
     this.options = options;
   }

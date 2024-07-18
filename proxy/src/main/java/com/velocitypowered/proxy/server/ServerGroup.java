@@ -21,6 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerInfo;
+import com.velocitypowered.proxy.VelocityServer;
 import com.velocitypowered.proxy.util.SseClient;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
@@ -40,6 +41,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class ServerGroup {
   private static final Logger logger = LogManager.getLogger(ServerGroup.class);
+  private final VelocityServer velocityServer;
   private final ServerMap serverMap;
   private final Map<String, Set<RegisteredServer>> groupMap;
   private SseClient sseClient;
@@ -48,8 +50,10 @@ public class ServerGroup {
    * Initializes the ServerGroup with the given server map and SSE endpoint.
    *
    * @param serverMap the server map
+   * @param velocityServer the server
    */
-  public ServerGroup(ServerMap serverMap) {
+  public ServerGroup(VelocityServer velocityServer, ServerMap serverMap) {
+    this.velocityServer = velocityServer;
     this.serverMap = serverMap;
     this.groupMap = new ConcurrentHashMap<>();
   }
@@ -80,7 +84,7 @@ public class ServerGroup {
    * @param groupName the group name
    * @param serverIps the set of server IPs
    */
-  public void updateGroup(String groupName, Set<String> serverIps) {
+  public void updateGroup(String groupName, Set<String> serverIps, Boolean isForce) {
     logger.info("Updating group '{}' with servers: {}", groupName, serverIps);
     Set<RegisteredServer> currentServers = groupMap.getOrDefault(groupName, new HashSet<>());
 
@@ -92,6 +96,9 @@ public class ServerGroup {
         ServerInfo serverInfo = new ServerInfo(serverName, new InetSocketAddress(ip, 25565));
         RegisteredServer registeredServer = serverMap.register(serverInfo);
         currentServers.add(registeredServer);
+        if (isForce) {
+          velocityServer.getConfiguration().getAttemptConnectionOrder().add(serverName);
+        }
         logger.info("Registered new server '{}' with IP '{}'", serverName, ip);
       }
     }
@@ -100,6 +107,9 @@ public class ServerGroup {
     while (iterator.hasNext()) {
       RegisteredServer server = iterator.next();
       if (!newServers.contains(server.getServerInfo().getName())) {
+        if (isForce) {
+          velocityServer.getConfiguration().getAttemptConnectionOrder().remove(server.getServerInfo().getName());
+        }
         serverMap.unregister(server.getServerInfo());
         iterator.remove();
         logger.info("Unregistered old server '{}'", server.getServerInfo().getName());
@@ -135,7 +145,8 @@ public class ServerGroup {
 
     String groupName = (String) data.get("name");
     Set<String> serverIps = new HashSet<>((ArrayList<String>) data.get("serverIps"));
-    logger.info("Parsed event data - groupName: '{}', serverIps: {}", groupName, serverIps);
-    updateGroup(groupName, serverIps);
+    Boolean isForce = (Boolean) data.get("isForce");
+    logger.info("Parsed event data - groupName: '{}', serverIps: {}, isForce: {}", groupName, serverIps, isForce);
+    updateGroup(groupName, serverIps, isForce);
   }
 }
